@@ -1,6 +1,6 @@
-package response
+package lambdaproxy
 
-type APIGatewayProxyResponse struct {
+type apiGatewayProxyResponse struct {
 	StatusCode      int               `json:"statusCode"`
 	Headers         map[string]string `json:"headers"`
 	Body            string            `json:"body"`

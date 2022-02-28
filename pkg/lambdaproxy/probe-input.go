@@ -1,4 +1,4 @@
-package probe
+package lambdaproxy
 
 // HTTPProbeCmd provides the HTTP probe parameters
 type HTTPProbeCmd struct {
