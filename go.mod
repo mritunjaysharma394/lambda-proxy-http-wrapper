@@ -1,3 +1,3 @@
-module github.com/mritunjaysharma394/lambda-proxy-http-wrapper
+module github.com/mritunjaysharma394/lambdaproxy
 
 go 1.17
