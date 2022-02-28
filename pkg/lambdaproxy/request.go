@@ -71,10 +71,24 @@ func clientError(status int) (apiGatewayProxyResponse, error) {
 	}, nil
 }
 
+type HTTPRequest struct {
+	Method   string   `json:"method"`
+	Resource string   `json:"resource"`
+	Headers  []string `json:"headers"`
+	Body     string   `json:"body"`
+	Username string   `json:"username"`
+	Password string   `json:"password"`
+}
+type HTTPResponse struct {
+	StatusCode int               `json:"statusCode"`
+	Headers    map[string]string `json:"headers"`
+	Body       string            `json:"body"`
+}
+
 func EncodeRequest(input *HTTPRequest, options *EncodeOptions) ([]byte, error) {
 	return nil, nil
 }
 
 func DecodeResponse(input []byte, options DecodeOptions) (HTTPResponse, error) {
-	return HTTPRequest{}, nil
+	return HTTPResponse{}, nil
 }
