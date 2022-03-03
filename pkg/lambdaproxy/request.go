@@ -1,6 +1,8 @@
 package lambdaproxy
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -18,37 +20,6 @@ type apiGatewayProxyRequest struct {
 	QueryStringParameters map[string]string `json:"queryStringParameters"`
 	Body                  string            `json:"body"`
 	IsBase64Encoded       bool              `json:"isBase64Encoded,omitempty"`
-}
-
-func show(req apiGatewayProxyRequest) (apiGatewayProxyResponse, error) {
-	// Get the `isbn` query string parameter from the request and
-	// validate it.
-	isbn := req.QueryStringParameters["isbn"]
-	if !isbnRegexp.MatchString(isbn) {
-		return clientError(http.StatusBadRequest)
-	}
-
-	// Fetch the book record from the database based on the isbn value.
-	// bk, err := getItem(isbn)
-	// if err != nil {
-	// 	return serverError(err)
-	// }
-	// if bk == nil {
-	// 	return clientError(http.StatusNotFound)
-	// }
-
-	// // The APIGatewayProxyResponse.Body field needs to be a string, so
-	// // we marshal the book record into JSON.
-	// js, err := json.Marshal(bk)
-	// if err != nil {
-	// 	return serverError(err)
-	// }
-
-	// Return a response with a 200 OK status and the JSON book record
-	// as the body.
-	return apiGatewayProxyResponse{
-		StatusCode: http.StatusOK,
-	}, nil
 }
 
 // Add a helper for handling errors. This logs any error to os.Stderr
@@ -85,10 +56,29 @@ type HTTPResponse struct {
 	Body       string            `json:"body"`
 }
 
+func handleRequest(ctx context.Context, request apiGatewayProxyRequest) (apiGatewayProxyResponse, error) {
+
+	fmt.Printf("Body size = %d.\n", len(request.Body))
+
+	fmt.Println("Headers:")
+	for key, value := range request.Headers {
+		fmt.Printf("    %s: %s\n", key, value)
+	}
+
+	return apiGatewayProxyResponse{Body: request.Body, StatusCode: 200}, nil
+}
+
+func main() {
+	lambda.Start(handleRequest)
+}
+
 func EncodeRequest(input *HTTPRequest, options *EncodeOptions) ([]byte, error) {
+
+	//TO DO
 	return nil, nil
 }
 
 func DecodeResponse(input []byte, options DecodeOptions) (HTTPResponse, error) {
+	// TO DO
 	return HTTPResponse{}, nil
 }
