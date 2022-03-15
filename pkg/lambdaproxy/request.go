@@ -1,7 +1,9 @@
 package lambdaproxy
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -56,7 +58,7 @@ type HTTPResponse struct {
 	Body       string            `json:"body"`
 }
 
-func handleRequest(ctx context.Context, request apiGatewayProxyRequest) (apiGatewayProxyResponse, error) {
+func handleRequest(ctx context.Context, request *HTTPProbeCmd) (*HTTPRequest, error) {
 
 	fmt.Printf("Body size = %d.\n", len(request.Body))
 
@@ -65,17 +67,36 @@ func handleRequest(ctx context.Context, request apiGatewayProxyRequest) (apiGate
 		fmt.Printf("    %s: %s\n", key, value)
 	}
 
-	return apiGatewayProxyResponse{Body: request.Body, StatusCode: 200}, nil
+	return &HTTPRequest{Method: request.Method, Resource: request.Resource, Headers: request.Headers, Body: request.Body}, nil
 }
 
 func main() {
-	lambda.Start(handleRequest)
+	input, err := handleRequest(context.Background(), &HTTPProbeCmd{})
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+	EncodeRequest(input, nil)
 }
 
 func EncodeRequest(input *HTTPRequest, options *EncodeOptions) ([]byte, error) {
 
-	//TO DO
-	return nil, nil
+	// encode http request to api gateway proxy request
+	// to do matching of parsing of both structs
+	encodeapiGatewayStruct := apiGatewayProxyRequest{
+		Resource: input.Resource,
+		Body:     input.Body,
+	}
+
+	var b bytes.Buffer
+	encoder := json.NewEncoder(&b)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(&encodeapiGatewayStruct); err != nil {
+		fmt.Errorf("Error encoding apiGatewayProxyRequest: %s", err)
+		return nil, err
+	}
+
+	return b.Bytes(), nil
 }
 
 func DecodeResponse(input []byte, options DecodeOptions) (HTTPResponse, error) {
