@@ -100,6 +100,10 @@ func EncodeRequest(input *HTTPRequest, options *EncodeOptions) ([]byte, error) {
 }
 
 func DecodeResponse(input []byte, options DecodeOptions) (HTTPResponse, error) {
-	// TO DO
-	return HTTPResponse{}, nil
+
+	var response apiGatewayProxyResponse
+	if err := json.NewDecoder(bytes.NewBuffer(input)).Decode(&response); err != nil {
+		return HTTPResponse{}, err
+	}
+	return HTTPResponse{StatusCode: response.StatusCode, Body: response.Body}, nil
 }
