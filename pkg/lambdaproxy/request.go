@@ -3,6 +3,7 @@ package lambdaproxy
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -53,9 +54,9 @@ type HTTPRequest struct {
 	Password string   `json:"password"`
 }
 type HTTPResponse struct {
-	StatusCode int               `json:"statusCode"`
-	Headers    map[string]string `json:"headers"`
-	Body       string            `json:"body"`
+	StatusCode int      `json:"statusCode"`
+	Headers    []string `json:"headers"`
+	Body       string   `json:"body"`
 }
 
 func handleRequest(ctx context.Context, request *HTTPProbeCmd) (*HTTPRequest, error) {
@@ -86,6 +87,7 @@ func EncodeRequest(input *HTTPRequest, options *EncodeOptions) ([]byte, error) {
 	encodeapiGatewayStruct := apiGatewayProxyRequest{
 		Resource: input.Resource,
 		Body:     input.Body,
+		Headers:  convertSliceToMap(input.Headers),
 	}
 
 	var b bytes.Buffer
@@ -105,5 +107,30 @@ func DecodeResponse(input []byte, options DecodeOptions) (HTTPResponse, error) {
 	if err := json.NewDecoder(bytes.NewBuffer(input)).Decode(&response); err != nil {
 		return HTTPResponse{}, err
 	}
-	return HTTPResponse{StatusCode: response.StatusCode, Body: response.Body}, nil
+	//decode the response.Body if base64 encoded
+	if response.IsBase64Encoded {
+		responseBodyBytes, err := base64.StdEncoding.DecodeString(string(response.Body))
+		if err != nil {
+			log.Fatalf("Some error occured during base64 decode. Error %s", err.Error())
+		}
+		response.Body = string(responseBodyBytes)
+	}
+
+	return HTTPResponse{StatusCode: response.StatusCode, Body: response.Body, Headers: convertMapToSlice(response.Headers)}, nil
+}
+
+func convertSliceToMap(input []string) map[string]string {
+	output := map[string]string{}
+	for _, v := range input {
+		output[v] = v
+	}
+	return output
+}
+
+func convertMapToSlice(input map[string]string) []string {
+	output := []string{}
+	for _, v := range input {
+		output = append(output, v)
+	}
+	return output
 }
