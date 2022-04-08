@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sort"
+	"strings"
 )
 
 var isbnRegexp = regexp.MustCompile(`[0-9]{3}\-[0-9]{10}`)
@@ -119,18 +121,48 @@ func DecodeResponse(input []byte, options DecodeOptions) (HTTPResponse, error) {
 	return HTTPResponse{StatusCode: response.StatusCode, Body: response.Body, Headers: convertMapToSlice(response.Headers)}, nil
 }
 
-func convertSliceToMap(input []string) map[string]string {
-	output := map[string]string{}
-	for _, v := range input {
-		output[v] = v
+func convertSliceToMap(pairs []string) map[string]string {
+	m := map[string]string{}
+	for _, pair := range pairs {
+		parts := strings.SplitN(pair, ":", 2)
+		parts[0] = strings.TrimSpace(parts[0])
+		parts[1] = strings.TrimSpace(parts[1])
+		if val, found := m[parts[0]]; !found {
+			m[parts[0]] = parts[1]
+		} else {
+			m[parts[0]] = fmt.Sprintf("%s,%s", val, parts[1])
+		}
 	}
-	return output
+	return m
 }
 
 func convertMapToSlice(input map[string]string) []string {
-	output := []string{}
-	for _, v := range input {
-		output = append(output, v)
+	// Convert map to slice of keys.
+	//since map is unordered we need to sort the keys.
+	keys := make([]string, 0, len(input))
+	for key, _ := range input {
+		keys = append(keys, key)
 	}
-	return output
+	sort.Strings(keys)
+
+	// Convert map to slice of values.
+	values := []string{}
+	for _, key := range keys {
+		values = append(values, input[key])
+	}
+
+	// Convert map to slice of key-value pairs.
+	pairs := []string{}
+	for key, value := range input {
+		splitvalue := strings.Split(value, ",")
+		if len(splitvalue) > 1 {
+			for _, v := range splitvalue {
+				pairs = append(pairs, fmt.Sprintf("%s: %s", key, strings.TrimSpace(v)))
+			}
+		} else {
+			pairs = append(pairs, fmt.Sprintf("%s: %s", key, value))
+		}
+	}
+
+	return pairs
 }
