@@ -17,6 +17,20 @@ import (
 var isbnRegexp = regexp.MustCompile(`[0-9]{3}\-[0-9]{10}`)
 var errorLogger = log.New(os.Stderr, "ERROR ", log.Llongfile)
 
+// HTTPProbeCmd provides the HTTP probe parameters
+type HTTPProbeCmd struct {
+	Method   string   `json:"method"`
+	Resource string   `json:"resource"`
+	Port     int      `json:"port"`
+	Protocol string   `json:"protocol"`
+	Headers  []string `json:"headers"`
+	Body     string   `json:"body"`
+	BodyFile string   `json:"body_file"`
+	Username string   `json:"username"`
+	Password string   `json:"password"`
+	Crawl    bool     `json:"crawl"`
+}
+
 type apiGatewayProxyRequest struct {
 	Resource              string            `json:"resource"` // The resource path defined in API Gateway
 	Path                  string            `json:"path"`     // The url path for the caller
@@ -25,6 +39,28 @@ type apiGatewayProxyRequest struct {
 	QueryStringParameters map[string]string `json:"queryStringParameters"`
 	Body                  string            `json:"body"`
 	IsBase64Encoded       bool              `json:"isBase64Encoded,omitempty"`
+}
+
+type apiGatewayProxyResponse struct {
+	StatusCode      int               `json:"statusCode"`
+	Headers         map[string]string `json:"headers"`
+	Body            string            `json:"body"`
+	IsBase64Encoded bool              `json:"isBase64Encoded,omitempty"`
+}
+
+type HTTPRequest struct {
+	Method   string   `json:"method"`
+	Resource string   `json:"resource"`
+	Headers  []string `json:"headers"`
+	Body     string   `json:"body"`
+	Username string   `json:"username"`
+	Password string   `json:"password"`
+}
+
+type HTTPResponse struct {
+	StatusCode int      `json:"statusCode"`
+	Headers    []string `json:"headers"`
+	Body       string   `json:"body"`
 }
 
 // Add a helper for handling errors. This logs any error to os.Stderr
@@ -47,20 +83,6 @@ func clientError(status int) (apiGatewayProxyResponse, error) {
 	}, nil
 }
 
-type HTTPRequest struct {
-	Method   string   `json:"method"`
-	Resource string   `json:"resource"`
-	Headers  []string `json:"headers"`
-	Body     string   `json:"body"`
-	Username string   `json:"username"`
-	Password string   `json:"password"`
-}
-type HTTPResponse struct {
-	StatusCode int      `json:"statusCode"`
-	Headers    []string `json:"headers"`
-	Body       string   `json:"body"`
-}
-
 func handleRequest(ctx context.Context, request *HTTPProbeCmd) (*HTTPRequest, error) {
 
 	fmt.Printf("Body size = %d.\n", len(request.Body))
@@ -71,15 +93,6 @@ func handleRequest(ctx context.Context, request *HTTPProbeCmd) (*HTTPRequest, er
 	}
 
 	return &HTTPRequest{Method: request.Method, Resource: request.Resource, Headers: request.Headers, Body: request.Body}, nil
-}
-
-func main() {
-	input, err := handleRequest(context.Background(), &HTTPProbeCmd{})
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	}
-	EncodeRequest(input, nil)
 }
 
 func EncodeRequest(input *HTTPRequest, options *EncodeOptions) ([]byte, error) {
@@ -165,4 +178,13 @@ func convertMapToSlice(input map[string]string) []string {
 	}
 
 	return pairs
+}
+
+func main() {
+	input, err := handleRequest(context.Background(), &HTTPProbeCmd{})
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+	EncodeRequest(input, nil)
 }
